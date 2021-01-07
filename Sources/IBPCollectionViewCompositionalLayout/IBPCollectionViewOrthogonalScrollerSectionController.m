@@ -1,4 +1,5 @@
 #import "IBPCollectionViewOrthogonalScrollerSectionController.h"
+#import "IBPCompositionalLayoutSupport.h"
 
 @implementation IBPCollectionViewOrthogonalScrollerSectionController
 
@@ -48,6 +49,11 @@
     for (NSString *reuseIdentifier in cellNibDict) {
         UINib *cellNib = cellNibDict[reuseIdentifier];
         [collectionView registerNib:cellNib forCellWithReuseIdentifier:reuseIdentifier];
+    }
+
+    // TODO: Remove this change and use a flag in `IBPCompositionLayoutableCollectionViewDataSource` instead
+    if([self.collectionView.dataSource isKindOfClass:[IBPCompositionLayoutableCollectionViewDataSource class]]) {
+        return [[(IBPCompositionLayoutableCollectionViewDataSource*)self.collectionView.dataSource dataSource] collectionView:collectionView cellForItemAtIndexPath:indexPath];
     }
 
     return [self.collectionView.dataSource collectionView:collectionView cellForItemAtIndexPath:indexPath];

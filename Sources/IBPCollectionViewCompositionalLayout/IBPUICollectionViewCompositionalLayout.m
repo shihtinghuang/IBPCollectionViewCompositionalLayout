@@ -16,6 +16,8 @@
 #import "IBPNSCollectionLayoutSpacing.h"
 #import "IBPNSCollectionLayoutSupplementaryItem_Private.h"
 #import "IBPUICollectionViewCompositionalLayoutConfiguration_Private.h"
+#import "IBPCompositionalLayoutSupport.h"
+
 
 @interface IBPUICollectionViewCompositionalLayout()<UICollectionViewDelegate> {
     NSMutableDictionary<NSIndexPath *, UICollectionViewLayoutAttributes *> *cachedItemAttributes;
@@ -28,6 +30,8 @@
     NSMutableDictionary<NSNumber *, IBPCollectionViewOrthogonalScrollerSectionController *> *orthogonalScrollerSectionControllers;
 
     NSMutableArray<IBPCollectionCompositionalLayoutSolver *> *solvers;
+
+    IBPNSCollectionLayoutEnvironment *_environment;
 }
 
 @property (nonatomic, copy) IBPNSCollectionLayoutSection *layoutSection;
@@ -41,9 +45,15 @@
 
 @property (nonatomic, weak) id<UICollectionViewDelegate> collectionViewDelegate;
 
+@property (nonatomic, strong) IBPCompositionLayoutableCollectionViewDataSource *dataSource;
+
 @end
 
 @implementation IBPUICollectionViewCompositionalLayout
+
+- (IBPNSCollectionLayoutSection *)layoutSectionAtSection:(NSInteger)section {
+    return self.layoutSectionProvider ? self.layoutSectionProvider(section, _environment) : self.layoutSection;
+}
 
 - (instancetype)initWithSection:(IBPNSCollectionLayoutSection *)section {
     if (@available(iOS 13, *)) {
@@ -141,6 +151,14 @@
         collectionView.delegate = self;
     }
 
+    self.dataSource = [[IBPCompositionLayoutableCollectionViewDataSource alloc] initWithDataSource:collectionView.dataSource prefetchDataSource:collectionView.prefetchDataSource layout:self];
+    collectionView.dataSource = self.dataSource;
+
+    // TODO: Handle layout attributes reuse
+//    if(cachedItemAttributes.count != 0) {
+//        return;
+//    }
+
     [self resetState];
 
     UIEdgeInsets collectionContentInset = UIEdgeInsetsZero;
@@ -160,16 +178,19 @@
         collectionContainer = [[IBPNSCollectionLayoutContainer alloc] initWithContentSize:collectionViewBounds.size contentInsets:insets];
     }
 
-    IBPNSCollectionLayoutEnvironment *environment = [[IBPNSCollectionLayoutEnvironment alloc] init];
-    environment.container = collectionContainer;
-    environment.traitCollection = collectionView.traitCollection;
+    if(!_environment) {
+        IBPNSCollectionLayoutEnvironment *environment = [[IBPNSCollectionLayoutEnvironment alloc] init];
+        environment.container = collectionContainer;
+        environment.traitCollection = collectionView.traitCollection;
+        _environment = environment;
+    }
 
     contentFrame = CGRectZero;
     contentFrame.origin.x = collectionContainer.effectiveContentInsets.leading;
     contentFrame.origin.y = collectionContainer.effectiveContentInsets.top;
 
     for (NSInteger sectionIndex = 0; sectionIndex < collectionView.numberOfSections; sectionIndex++) {
-        IBPNSCollectionLayoutSection *layoutSection = self.layoutSectionProvider ? self.layoutSectionProvider(sectionIndex, environment) : self.layoutSection;
+        IBPNSCollectionLayoutSection *layoutSection = self.layoutSectionProvider ? self.layoutSectionProvider(sectionIndex, _environment) : self.layoutSection;
 
         CGPoint sectionOrigin = contentFrame.origin;
         if (self.scrollDirection == UICollectionViewScrollDirectionVertical) {
@@ -181,7 +202,7 @@
 
         IBPCollectionCompositionalLayoutSolver *solver = [IBPCollectionCompositionalLayoutSolver solverWithLayoutSection:layoutSection scrollDirection:self.scrollDirection];
         [solvers addObject:solver];
-        [solver solveForContainer:collectionContainer traitCollection:environment.traitCollection];
+        [solver solveForContainer:collectionContainer traitCollection:_environment.traitCollection];
 
         NSInteger numberOfItems = [collectionView numberOfItemsInSection:sectionIndex];
         for (NSInteger itemIndex = 0; itemIndex < numberOfItems; itemIndex++) {
@@ -255,13 +276,6 @@
         if (layoutSection.scrollsOrthogonally) {
             IBPCollectionViewOrthogonalScrollerSectionController *controller = orthogonalScrollerSectionControllers[@(sectionIndex)];
 
-            UICollectionView *scrollView = [self setupOrthogonalScrollViewForSection:layoutSection];
-            if (@available(iOS 11.0, *)) {
-                if ([scrollView respondsToSelector:@selector(setContentInsetAdjustmentBehavior:)] && [collectionView respondsToSelector:@selector(contentInsetAdjustmentBehavior)]) {
-                    scrollView.contentInsetAdjustmentBehavior = collectionView.contentInsetAdjustmentBehavior;
-                }
-            }
-
             CGRect scrollViewFrame = CGRectZero;
             if (self.scrollDirection == UICollectionViewScrollDirectionVertical) {
                 scrollViewFrame.origin.y = sectionOrigin.y + layoutSection.contentInsets.top;
@@ -273,26 +287,15 @@
                 scrollViewFrame.size.width = MIN(solver.layoutFrame.size.width, collectionContainer.contentSize.width);
                 scrollViewFrame.size.height = collectionContainer.contentSize.height;
             }
-            scrollView.frame = scrollViewFrame;
+
+            // Section layout for orthogonal scrollable views
+            NSIndexPath *indexPath = [NSIndexPath indexPathForItem:0 inSection:sectionIndex];
+            UICollectionViewLayoutAttributes* sectionAttributes = [UICollectionViewLayoutAttributes layoutAttributesForCellWithIndexPath:indexPath];
+            sectionAttributes.frame = scrollViewFrame;
+            cachedItemAttributes[indexPath] = sectionAttributes;
 
             contentFrame = CGRectUnion(contentFrame, scrollViewFrame);
 
-            if (layoutSection.orthogonalScrollingBehavior == IBPUICollectionLayoutSectionOrthogonalScrollingBehaviorGroupPagingCentered) {
-                CGSize groupSize = [layoutSection.group.layoutSize effectiveSizeForContainer:collectionContainer];
-                if (self.scrollDirection == UICollectionViewScrollDirectionVertical) {
-                    CGFloat inset = (collectionContainer.contentSize.width - groupSize.width) / 2;
-                    scrollView.contentInset = UIEdgeInsetsMake(0, inset, 0, 0);
-                }
-                if (self.scrollDirection == UICollectionViewScrollDirectionHorizontal) {
-                    CGFloat inset = (collectionContainer.contentSize.height - groupSize.height) / 2;
-                    scrollView.contentInset = UIEdgeInsetsMake(inset, 0, 0, 0);
-                }
-            }
-
-            [collectionView addSubview:scrollView];
-
-            controller = [[IBPCollectionViewOrthogonalScrollerSectionController alloc] initWithSectionIndex:sectionIndex collectionView:self.collectionView scrollView:scrollView];
-            orthogonalScrollerSectionControllers[@(sectionIndex)] = controller;
         }
 
         CGSize extendedBoundary = CGSizeZero;
@@ -449,7 +452,44 @@
     }
 }
 
-- (UICollectionView *)setupOrthogonalScrollViewForSection:(IBPNSCollectionLayoutSection *)section {
+- (UICollectionViewLayout *)getCachedCollectionViewLayoutWithSectionIndex:(NSInteger)sectionIndex {
+    UICollectionView* cachedView = orthogonalScrollerSectionControllers[@(sectionIndex)].scrollView;
+    return cachedView.collectionViewLayout;
+}
+
+- (UICollectionView *)getOrthogonalScrollViewForSection:(IBPNSCollectionLayoutSection *)layoutSection sectionIndex:(NSInteger)sectionIndex collectionView:(UICollectionView*)collectionView {
+    UICollectionView* cachedView = orthogonalScrollerSectionControllers[@(sectionIndex)].scrollView;
+    if(cachedView) {
+        return cachedView;
+    }
+
+    UICollectionView *scrollView = [self setupOrthogonalScrollViewForSection:layoutSection scrollView:nil];
+
+    if (@available(iOS 11.0, *)) {
+        if ([scrollView respondsToSelector:@selector(setContentInsetAdjustmentBehavior:)] && [collectionView respondsToSelector:@selector(contentInsetAdjustmentBehavior)]) {
+            scrollView.contentInsetAdjustmentBehavior = collectionView.contentInsetAdjustmentBehavior;
+        }
+    }
+
+    if (layoutSection.orthogonalScrollingBehavior == IBPUICollectionLayoutSectionOrthogonalScrollingBehaviorGroupPagingCentered) {
+        CGSize groupSize = [layoutSection.group.layoutSize effectiveSizeForContainer:_environment.container];
+        if (self.scrollDirection == UICollectionViewScrollDirectionVertical) {
+            CGFloat inset = (_environment.container.contentSize.width - groupSize.width) / 2;
+            scrollView.contentInset = UIEdgeInsetsMake(0, inset, 0, 0);
+        }
+        if (self.scrollDirection == UICollectionViewScrollDirectionHorizontal) {
+            CGFloat inset = (_environment.container.contentSize.height - groupSize.height) / 2;
+            scrollView.contentInset = UIEdgeInsetsMake(inset, 0, 0, 0);
+        }
+    }
+
+    IBPCollectionViewOrthogonalScrollerSectionController *controller = [[IBPCollectionViewOrthogonalScrollerSectionController alloc] initWithSectionIndex:sectionIndex collectionView:self.collectionView scrollView:scrollView];
+    orthogonalScrollerSectionControllers[@(sectionIndex)] = controller;
+
+    return scrollView;
+}
+
+- (UICollectionView *)setupOrthogonalScrollViewForSection:(IBPNSCollectionLayoutSection *)section scrollView:(IBPCollectionViewOrthogonalScrollerEmbeddedScrollView*)cachedScrollView {
     IBPUICollectionViewCompositionalLayoutConfiguration *configuration = [IBPUICollectionViewCompositionalLayoutConfiguration defaultConfiguration];
     configuration.scrollDirection = self.scrollDirection == UICollectionViewScrollDirectionVertical ? UICollectionViewScrollDirectionHorizontal : UICollectionViewScrollDirectionVertical;
 
@@ -489,8 +529,13 @@
     collectionViewLayout.parent = self;
     collectionViewLayout.containerSection = section;
 
-    IBPCollectionViewOrthogonalScrollerEmbeddedScrollView *scrollView = [[IBPCollectionViewOrthogonalScrollerEmbeddedScrollView alloc] initWithFrame:CGRectZero
-                                                                                                                                collectionViewLayout:collectionViewLayout];
+    IBPCollectionViewOrthogonalScrollerEmbeddedScrollView *scrollView = cachedScrollView;
+    if(!scrollView) {
+        scrollView = [[IBPCollectionViewOrthogonalScrollerEmbeddedScrollView alloc] initWithFrame:CGRectZero collectionViewLayout:collectionViewLayout];
+    } else {
+        scrollView.collectionViewLayout = collectionViewLayout;
+    }
+
     scrollView.backgroundColor = UIColor.clearColor;
     scrollView.directionalLockEnabled = YES;
     scrollView.showsHorizontalScrollIndicator = NO;

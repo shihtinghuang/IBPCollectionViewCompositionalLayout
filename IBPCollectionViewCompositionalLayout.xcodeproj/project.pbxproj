@@ -76,6 +76,7 @@
 		14B9587523B8E60900DF3B7F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 14B9587423B8E60900DF3B7F /* Assets.xcassets */; };
 		14B9587823B8E60900DF3B7F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 14B9587623B8E60900DF3B7F /* LaunchScreen.storyboard */; };
 		14F3F7972300542B0096D032 /* IBPNSCollectionLayoutForwardCompatibility.h in Headers */ = {isa = PBXBuildFile; fileRef = 14F3F7952300542B0096D032 /* IBPNSCollectionLayoutForwardCompatibility.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		7C3E7FBE25A56C4A007E5C04 /* IBPCompositionalLayoutSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 7C3E7FBD25A56C4A007E5C04 /* IBPCompositionalLayoutSupport.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -180,6 +181,8 @@
 		14B9588023B8EDEE00DF3B7F /* HostApp-Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "HostApp-Release.xcconfig"; sourceTree = "<group>"; };
 		14B9588123B8EDEF00DF3B7F /* HostApp-Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "HostApp-Shared.xcconfig"; sourceTree = "<group>"; };
 		14F3F7952300542B0096D032 /* IBPNSCollectionLayoutForwardCompatibility.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IBPNSCollectionLayoutForwardCompatibility.h; sourceTree = "<group>"; };
+		7C3E7FBD25A56C4A007E5C04 /* IBPCompositionalLayoutSupport.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = IBPCompositionalLayoutSupport.m; sourceTree = "<group>"; };
+		7C3E7FC225A56C67007E5C04 /* IBPCompositionalLayoutSupport.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IBPCompositionalLayoutSupport.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -304,6 +307,8 @@
 				143A2D4B22F9CBB300F8904D /* IBPNSCollectionLayoutSupplementaryItem.m */,
 				145DA02123097D6E00A044D2 /* IBPNSDirectionalEdgeInsets.m */,
 				143A2D2E22F9CBB100F8904D /* IBPUICollectionViewCompositionalLayout.m */,
+				7C3E7FC225A56C67007E5C04 /* IBPCompositionalLayoutSupport.h */,
+				7C3E7FBD25A56C4A007E5C04 /* IBPCompositionalLayoutSupport.m */,
 				145DA018230479C700A044D2 /* IBPUICollectionViewCompositionalLayoutConfiguration_Private.h */,
 				143A2D3F22F9CBB200F8904D /* IBPUICollectionViewCompositionalLayoutConfiguration.m */,
 				149FA9C2230F2B230065AD4D /* Internal */,
@@ -569,6 +574,7 @@
 				143A2D7C22F9CBB300F8904D /* IBPNSCollectionLayoutEdgeSpacing.m in Sources */,
 				143A2D7422F9CBB300F8904D /* IBPUICollectionViewCompositionalLayoutConfiguration.m in Sources */,
 				143A2D7A22F9CBB300F8904D /* IBPNSCollectionLayoutSize.m in Sources */,
+				7C3E7FBE25A56C4A007E5C04 /* IBPCompositionalLayoutSupport.m in Sources */,
 				143A2D5722F9CBB300F8904D /* IBPCollectionViewOrthogonalScrollerEmbeddedScrollView.m in Sources */,
 				143A2D6322F9CBB300F8904D /* IBPUICollectionViewCompositionalLayout.m in Sources */,
 				143A2D6E22F9CBB300F8904D /* IBPNSCollectionLayoutBoundarySupplementaryItem.m in Sources */,

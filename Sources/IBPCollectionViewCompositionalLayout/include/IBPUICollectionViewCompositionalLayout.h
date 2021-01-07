@@ -12,7 +12,19 @@ NS_ASSUME_NONNULL_BEGIN
 
 typedef IBPNSCollectionLayoutSection * _Nullable (^IBPUICollectionViewCompositionalLayoutSectionProvider)(NSInteger section, id<IBPNSCollectionLayoutEnvironment>);
 
-@interface IBPUICollectionViewCompositionalLayout : UICollectionViewLayout
+@protocol IBPUICollectionViewCompositionalLayoutProvider
+
+- (IBPNSCollectionLayoutSection *)layoutSectionAtSection:(NSInteger)section;
+
+- (UICollectionViewLayout *)getCachedCollectionViewLayoutWithSectionIndex:(NSInteger)sectionIndex;
+
+- (UICollectionView *)getOrthogonalScrollViewForSection:(IBPNSCollectionLayoutSection *)layoutSection sectionIndex:(NSInteger)sectionIndex collectionView:(UICollectionView*)collectionView;
+
+- (UICollectionViewLayoutAttributes *)layoutAttributesForItemAtIndexPath:(NSIndexPath *)indexPath;
+
+@end
+
+@interface IBPUICollectionViewCompositionalLayout : UICollectionViewLayout<IBPUICollectionViewCompositionalLayoutProvider>
 
 - (instancetype)initWithSection:(IBPNSCollectionLayoutSection *)section;
 - (instancetype)initWithSection:(IBPNSCollectionLayoutSection *)section

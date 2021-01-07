@@ -176,5 +176,8 @@ extension OrthogonalScrollBehaviorViewController {
 extension OrthogonalScrollBehaviorViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         collectionView.deselectItem(at: indexPath, animated: true)
+        if let cell = collectionView.cellForItem(at: indexPath) as? TextCell {
+            print(cell.label.text)
+        }
     }
 }
